@@ -2,7 +2,7 @@
 session_start();
 require_once 'config/db.php';
 
-// Redirect if already logged in
+// Mengalihkan jika sudah login
 if(isset($_SESSION['user_id'])) {
     header("Location: dashboard.php");
     exit;
@@ -10,7 +10,7 @@ if(isset($_SESSION['user_id'])) {
 
 $error = '';
 
-// Process login form
+// Proses form login
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
