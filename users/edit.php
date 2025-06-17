@@ -3,16 +3,16 @@ session_start();
 require_once '../config/db.php';
 require_once '../config/auth.php';
 
-// Check if user is logged in
+// Memeriksa apakah pengguna sudah login
 if(!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
     exit;
 }
 
-// Check if user has access to this page (Admin only)
+// Memeriksa apakah pengguna memiliki akses ke halaman ini (hanya Admin)
 requireAccess([1]);
 
-// Check if ID is provided
+// Memeriksa apakah ID disediakan
 if(!isset($_GET['id']) || empty($_GET['id'])) {
     $_SESSION['error'] = "ID pengguna tidak ditemukan";
     header("Location: index.php");
@@ -24,12 +24,12 @@ $error = '';
 $success = '';
 
 try {
-    // Get roles data for dropdown
+    // Mendapatkan data peran untuk dropdown
     $roles_sql = "SELECT * FROM roles ORDER BY id_role";
     $roles_stmt = $conn->query($roles_sql);
     $roles = $roles_stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get user data
+    // Mendapatkan data pengguna
     $user_sql = "SELECT * FROM users WHERE id_user = :id";
     $user_stmt = $conn->prepare($user_sql);
     $user_stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -43,15 +43,15 @@ try {
     
     $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
     
-    // Process form submission
+    // Memproses pengiriman formulir
     if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $nama_lengkap = trim($_POST['nama_lengkap']);
         $username = trim($_POST['username']);
-        $password = $_POST['password']; // Optional, only if changing password
+        $password = $_POST['password']; // Opsional, hanya jika mengubah password
         $confirm_password = $_POST['confirm_password'];
         $id_role = (int)$_POST['id_role'];
         
-        // Validation
+        // Validasi
         if(empty($nama_lengkap) || empty($username)) {
             $error = "Nama lengkap dan username harus diisi";
         } elseif(!empty($password) && $password !== $confirm_password) {
@@ -59,7 +59,7 @@ try {
         } elseif(!empty($password) && strlen($password) < 6) {
             $error = "Password minimal 6 karakter";
         } else {
-            // Check if username is already taken by another user
+            // Memeriksa apakah username sudah digunakan oleh pengguna lain
             if($username != $user['username']) {
                 $check_sql = "SELECT id_user FROM users WHERE username = :username AND id_user != :id_user";
                 $check_stmt = $conn->prepare($check_sql);
@@ -73,10 +73,10 @@ try {
             }
             
             if(empty($error)) {
-                // Begin transaction
+                // Memulai transaksi
                 $conn->beginTransaction();
                 
-                // Build update SQL based on whether password is provided
+                // Menyusun SQL update berdasarkan apakah password disediakan
                 if(!empty($password)) {
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                     $update_sql = "UPDATE users SET 
@@ -96,8 +96,7 @@ try {
                 $update_stmt = $conn->prepare($update_sql);
                 $update_stmt->bindParam(':nama_lengkap', $nama_lengkap);
                 $update_stmt->bindParam(':username', $username);
-                $update_stmt->bindParam(':id_role', $id_role, PDO::PARAM_INT);
-                $update_stmt->bindParam(':id_user', $id, PDO::PARAM_INT);
+                $update_stmt->bindParam(':id_role', $id_role, PDO::PARAM_INT);                $update_stmt->bindParam(':id_user', $id, PDO::PARAM_INT);
                 
                 if(!empty($password)) {
                     $update_stmt->bindParam(':password', $hashed_password);
@@ -105,20 +104,20 @@ try {
                 
                 $update_stmt->execute();
                 
-                // If the user is being changed to or from role 3 (Anggota), handle anggota record
+                // Jika pengguna diubah ke atau dari peran 3 (Anggota), tangani catatan anggota
                 if($id_role == 3 || $user['id_role'] == 3) {
-                    // Check if there's already an anggota record with this name
+                    // Memeriksa apakah sudah ada catatan anggota dengan nama ini
                     $check_anggota_sql = "SELECT id_anggota FROM anggota WHERE nama = :nama";
                     $check_anggota_stmt = $conn->prepare($check_anggota_sql);
                     $check_anggota_stmt->bindParam(':nama', $nama_lengkap);
                     $check_anggota_stmt->execute();
                     
-                    // If changing to role 3 (Anggota) and no anggota record exists
+                    // Jika mengubah ke peran 3 (Anggota) dan tidak ada catatan anggota
                     if($id_role == 3 && $check_anggota_stmt->rowCount() == 0) {
-                        // Generate anggota code
+                        // Menghasilkan kode anggota
                         $kode_anggota = 'A' . str_pad($id, 5, '0', STR_PAD_LEFT);
                         
-                        // Create anggota record
+                        // Membuat catatan anggota
                         $insert_anggota_sql = "INSERT INTO anggota (kode_anggota, nama, alamat, no_telepon) 
                                           VALUES (:kode_anggota, :nama, '', '')";
                         $insert_anggota_stmt = $conn->prepare($insert_anggota_sql);
@@ -126,9 +125,9 @@ try {
                         $insert_anggota_stmt->bindParam(':nama', $nama_lengkap);
                         $insert_anggota_stmt->execute();
                     } 
-                    // If anggota record exists and name is changing
+                    // Jika catatan anggota sudah ada dan nama berubah
                     elseif($check_anggota_stmt->rowCount() > 0 && $nama_lengkap != $user['nama_lengkap']) {
-                        // Update the anggota name to match
+                        // Memperbarui nama anggota agar sesuai
                         $update_anggota_sql = "UPDATE anggota SET nama = :new_nama WHERE nama = :old_nama";
                         $update_anggota_stmt = $conn->prepare($update_anggota_sql);
                         $update_anggota_stmt->bindParam(':new_nama', $nama_lengkap);
@@ -137,15 +136,15 @@ try {
                     }
                 }
                 
-                // Commit transaction
+                // Commit transaksi
                 $conn->commit();
                 
-                // Update session if editing current user
+                // Perbarui sesi jika mengedit pengguna saat ini
                 if($id == $_SESSION['user_id']) {
                     $_SESSION['nama'] = $nama_lengkap;
                     $_SESSION['role'] = $id_role;
                     
-                    // Get the role name
+                    // Mendapatkan nama peran
                     $role_name_sql = "SELECT nama_role FROM roles WHERE id_role = :id_role";
                     $role_name_stmt = $conn->prepare($role_name_sql);
                     $role_name_stmt->bindParam(':id_role', $id_role, PDO::PARAM_INT);
@@ -156,14 +155,14 @@ try {
                 
                 $success = "Data pengguna berhasil diperbarui";
                 
-                // Refresh user data
+                // Menyegarkan data pengguna
                 $user_stmt->execute();
                 $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
             }
         }
     }
 } catch(PDOException $e) {
-    // Rollback transaction on error
+    // Rollback transaksi jika terjadi kesalahan
     if($conn->inTransaction()) {
         $conn->rollBack();
     }
@@ -174,10 +173,9 @@ try {
 include '../templates/header.php';
 ?>
 
-<div class="container mx-auto px-4 py-6">
-    <div class="flex items-center justify-between mb-6">
+<div class="container mx-auto px-4 py-6">    <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-800">
-            <i class="fas fa-user-edit mr-2 text-indigo-600"></i> Edit User
+            <i class="fas fa-user-edit mr-2 text-indigo-600"></i> Edit Pengguna
         </h1>
         <a href="index.php" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded inline-flex items-center">
             <i class="fas fa-arrow-left mr-2"></i> Kembali
