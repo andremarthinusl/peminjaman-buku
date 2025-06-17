@@ -56,8 +56,7 @@ try {
     $count_stmt->execute();
     $total_rows = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
     $total_pages = ceil($total_rows / $per_page);
-    
-    // Ambil data peminjaman dengan paginasi, filter, dan pencarian
+      // Ambil data peminjaman dengan paginasi, filter, dan pencarian
     $sql = "SELECT m.*, a.nama as nama_anggota, a.kode_anggota, 
             b.judul_buku, b.kode_buku 
             FROM meminjam m
@@ -68,7 +67,7 @@ try {
         $sql .= " WHERE " . implode(' AND ', $where_clauses);
     }
     
-    $sql .= " ORDER BY m.tgl_pinjam DESC LIMIT :offset, :per_page";
+    $sql .= " ORDER BY m.id_pinjam ASC LIMIT :offset, :per_page";
     
     $stmt = $conn->prepare($sql);
     
@@ -219,10 +218,10 @@ include '../templates/header.php';
     <!-- Loans Table -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">                
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Pinjam</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Kembali</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anggota</th>
@@ -233,10 +232,13 @@ include '../templates/header.php';
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <?php if(count($loans) > 0): ?>
-                        <?php foreach($loans as $loan): ?>
+                        <?php 
+                        $no = ($page - 1) * $per_page + 1;
+                        foreach($loans as $loan): 
+                        ?>
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?= $loan['id_pinjam'] ?>
+                                    <?= $no++ ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <?= date('d/m/Y', strtotime($loan['tgl_pinjam'])) ?>
