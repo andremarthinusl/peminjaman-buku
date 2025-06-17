@@ -173,7 +173,8 @@ try {
 include '../templates/header.php';
 ?>
 
-<div class="container mx-auto px-4 py-6">    <div class="flex items-center justify-between mb-6">
+<div class="container mx-auto px-4 py-6">    
+    <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-800">
             <i class="fas fa-user-edit mr-2 text-indigo-600"></i> Edit Pengguna
         </h1>
