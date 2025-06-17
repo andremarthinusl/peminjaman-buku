@@ -96,7 +96,8 @@ try {
                 $update_stmt = $conn->prepare($update_sql);
                 $update_stmt->bindParam(':nama_lengkap', $nama_lengkap);
                 $update_stmt->bindParam(':username', $username);
-                $update_stmt->bindParam(':id_role', $id_role, PDO::PARAM_INT);                $update_stmt->bindParam(':id_user', $id, PDO::PARAM_INT);
+                $update_stmt->bindParam(':id_role', $id_role, PDO::PARAM_INT);                
+                $update_stmt->bindParam(':id_user', $id, PDO::PARAM_INT);
                 
                 if(!empty($password)) {
                     $update_stmt->bindParam(':password', $hashed_password);
